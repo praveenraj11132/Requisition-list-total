@@ -1,0 +1,189 @@
+<?php
+/**
+ * Copyright © Magento, Inc. All rights reserved.
+ * See COPYING.txt for license details.
+ */
+
+/** @var $block \Magento\RequisitionList\Block\Requisition\View\Details */
+/** @var $escaper \Magento\Framework\Escaper */
+?>
+<?php
+$cartData = $block->getData('subtotal');
+$subtotal = $cartData->getSubtotal();
+?>
+
+<script type="text/javascript">
+
+    // Require the jQuery library as a dependency and define a function that runs when the module is loaded.
+    // The $ parameter is the jQuery object.
+    require(['jquery'], function($) {
+        $(document).ready(function() {
+            // Add a click event listener to all input elements with the name "product_ids[]".
+            $('input[name="productIds"]').click(function() {
+                // Get the price of the product as a float.
+                var productPrice = $(this).closest('.product-item').find('.price').text().replace('$', '');
+                // Get the quantity of the product as an integer.
+                var productQty = $(this).closest('.product-item').find('.product-qty-num').val();
+                // Get the current subtotal as a float.
+                var subtotal = parseFloat($('#subtotal').text().replace('$', ''));
+
+                // Calculate the total price of the product by multiplying the price and quantity and converting to a float.
+                var productTotalPrice = parseFloat(productPrice) * parseInt(productQty);
+
+                // Check if the product is selected.
+                var isProductSelected = $(this).prop('checked');
+
+                // If the product is selected, add its total price to the subtotal and set a data attribute on the input element.
+                if (isProductSelected) {
+                    subtotal += productTotalPrice;
+                    $(this).attr('data-product-price', productTotalPrice);
+                }
+
+                // If the product is not selected, remove its total price from the subtotal and remove the data attribute.
+                else {
+                    var productPriceToRemove = parseFloat($(this).attr('data-product-price'));
+                    subtotal -= productPriceToRemove;
+                    $(this).attr('data-product-price', '');
+                }
+
+                // update the HTML element with id "subtotal"
+                $('#subtotal').text('$' + subtotal.toFixed(2));
+            });
+
+            // Add an event listener to all quantity input elements.
+
+            $('body').on('click', '.qty-btn', function() {
+                // Get the price of the product as a float.
+
+                var productPrice = $(this).closest('.product-item').find('.price').text().replace('$', '');
+
+                // Get the quantity of the product as an integer.
+                var productQty = $(this).closest('.product-item').find('.product-qty-num').val();
+
+                // Get the current subtotal as a float.
+                var subtotal = parseFloat($('#subtotal').text().replace('$', ''));
+
+                // Calculate the total price of the product by multiplying the price and quantity and converting to a float.
+                var productTotalPrice = parseFloat(productPrice) * parseInt(productQty);
+
+                // Check if the product is selected.
+                var isProductSelected = $(this).closest('.product-item').find('input[name="productIds"]').prop('checked');
+
+                // If the product is selected, add its total price to the subtotal and update the data attribute on the input element.
+                if (isProductSelected) {
+                    var oldProductPrice = parseFloat($(this).closest('.product-item').find('input[name="productIds"]').attr('data-product-price'));
+                    subtotal -= oldProductPrice;
+                    subtotal += productTotalPrice;
+                    $(this).closest('.product-item').find('input[name="productIds"]').attr('data-product-price', productTotalPrice);
+
+                    // Update the HTML element with id "subtotal".
+                    $('#subtotal').text('$' + subtotal.toFixed(2));
+                }
+            });
+            // Add a click event listener to the "Select all" checkbox.
+            $('input[name="requisition-selectall-checkbox"]').click(function() {
+                // Get the current subtotal as a float.
+                var subtotal = parseFloat($('#subtotal').text().replace('$', ''));
+
+                // Check if the "Select all" checkbox is checked.
+                var isSelectAllChecked = $(this).prop('checked');
+
+                // Loop through all the product checkboxes and update their status and subtotal accordingly.
+                $('input[name="productIds"]').each(function() {
+                    // Get the price of the product as a float.
+                    var productPrice = $(this).closest('.product-item').find('.price').text().replace('$', '');
+                    // Get the quantity of the product as an integer.
+                    var productQty = $(this).closest('.product-item').find('.product-qty-num').val();
+
+                    // Calculate the total price of the product by multiplying the price and quantity and converting to a float.
+                    var productTotalPrice = parseFloat(productPrice) * parseInt(productQty);
+
+                    // If the "Select all" checkbox is checked, select all products and add their prices to the subtotal.
+                    if (isSelectAllChecked) {
+                        $(this).prop('checked', true);
+                        subtotal += productTotalPrice;
+                        $(this).attr('data-product-price', productTotalPrice);
+                    }
+                    // If the "Select all" checkbox is not checked, deselect all products and remove their prices from the subtotal.
+                    else {
+                        $(this).prop('checked', false);
+                        $(this).attr('data-product-price', '');
+                        subtotal -= productTotalPrice;
+                    }
+                });
+
+                // Update the HTML element with id "subtotal".
+                $('#subtotal').text('$' + subtotal.toFixed(2));
+            });
+
+        });
+    });
+</script>
+
+<div class="actions-toolbar requisition-view-buttons" data-mage-init='{"requisitionActions":{ }}'>
+    <div class="requisition-list-subtotal">
+        <span><?= $escaper->escapeHtmlAttr(__('Subtotal:')) ?><span class="price" id="subtotal"><?= "$".$subtotal ?></span></span>
+    </div>
+    <div class="primary">
+        <?php if ($block->getItemCount()): ?>
+        <!-- ko scope: 'requisition.list.items.massaction.addtocart' -->
+        <button type="button"
+                title="<?= $escaper->escapeHtmlAttr(__('Add to Cart')) ?>"
+                class="action primary disabled to-cart"
+                data-bind="
+                    css: {
+                        disabled: !isEnable()
+                    },
+                    click: applyAction.bind($data, {
+                        requisition_id: '<?= (int)$block->getRequest()->getParam('requisition_id') ?>'
+                    })"
+                data-mobile-label="<?= $escaper->escapeHtmlAttr(__('Add to Cart')) ?>">
+            <span><?= $escaper->escapeHtml(__('Add to Cart')) ?></span>
+        </button>
+        <!-- /ko -->
+        <script type="text/x-magento-init">
+            {
+                "*": {
+                    "Magento_Ui/js/core/app": {
+                        "components": {
+                            "requisition.list.items.massaction.addtocart": {
+                                "component": "Magento_RequisitionList/js/requisition/items/grid/massaction/add-to-cart",
+                                "selectProvider": "requisition.item.grid.selection.provider",
+                                "hasConfirm": true,
+                                "action": "<?= $escaper->escapeUrl($block->getUrl(
+                                    'requisition_list/item/addToCart'
+                                )) ?>"
+                            }
+                        }
+                    }
+                }
+            }
+        </script>
+        <button type="button"
+                title="<?= $escaper->escapeHtmlAttr(__('Update List')) ?>"
+                class="action primary stroked update-list"
+                data-action="update-list"
+                data-mobile-label="<?= $escaper->escapeHtmlAttr(__('Update List')) ?>"
+                data-update-list='{
+                "updateUrl":"<?= $escaper->escapeUrl($block->getUrl('*/item/update', [
+                    'requisition_id' => (int)$block->getRequest()->getParam('requisition_id')
+                ])) ?>"
+                }'>
+            <span><?= $escaper->escapeHtml(__('Update List')) ?></span>
+        </button>
+        <?php endif ?>
+        <button type="button"
+                title="<?= $escaper->escapeHtmlAttr(__('Delete Requisition List')) ?>"
+                class="action delete primary stroked remove-list"
+                data-action="remove-list"
+                data-mobile-label="<?= $escaper->escapeHtmlAttr(__('Delete Requisition List')) ?>"
+                data-delete-list='{
+                "deleteUrl":"<?= $escaper->escapeUrl($block->getUrl('*/requisition/delete', [
+                    'requisition_id' => (int)$block->getRequest()->getParam('requisition_id')
+                ])) ?>",
+                "listName": "<?= $escaper->escapeHtml($block->getRequisitionList()->getName()) ?>"
+                }'>
+            <span><?= $escaper->escapeHtml(__('Delete Requisition List')) ?></span>
+        </button>
+    </div>
+</div>
